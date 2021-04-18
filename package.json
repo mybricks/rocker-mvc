@@ -1,0 +1,60 @@
+{
+  "name": "@mybricks/rocker-mvc",
+  "version": "0.0.2",
+  "description": "MVC Framework for typescript, powered by rocker.",
+  "author": "Chemingjun@vdian",
+  "scripts": {
+    "build": "npm run clean && (tsc|true)",
+    "clean": "rimraf *.js ./src/**/*.js ./src/**/*.d.ts ./test/**/*.js  ./samples/**/*.js",
+    "dev": "npm run build && npm run start & node test/test.js",
+    "lint": "tslint ./src/**/*.ts ./test/**/*.ts",
+    "start": "tsc -w"
+  },
+  "dependencies": {
+    "@mybricks/rocker-commons": "^0.0.2",
+    "@mybricks/rocker-ioc": "^0.0.1",
+    "co": "^4.6.0",
+    "ejs": "^3.1.2",
+    "koa": "^2.5.0",
+    "koa-compress": "^3.0.0",
+    "mime": "^2.2.0",
+    "zone.js": "^0.8.26"
+  },
+  "devDependencies": {
+    "@mybricks/rxui": "^1.0.13",
+    "@types/chai": "4.1.2",
+    "@types/co": "^4.6.2",
+    "@types/ejs": "^2.5.0",
+    "@types/koa": "^2.0.44",
+    "@types/koa-compress": "^2.0.9",
+    "@types/mocha": "2.2.48",
+    "@types/node": "^7.10.9",
+    "@types/sinon": "4.1.4",
+    "chai": "^4.1.2",
+    "mocha": "^5.0.5",
+    "nyc": "^11.6.0",
+    "rewire": "^3.0.2",
+    "rimraf": "^2.6.2",
+    "sinon": "^4.4.8",
+    "source-map-support": "^0.4.18",
+    "supertest": "^3.0.0",
+    "ts-node": "^5.0.1",
+    "tslint": "^5.9.1",
+    "typescript": "^3.8.3"
+  },
+  "keywords": [
+    "mvc",
+    "di",
+    "javascript",
+    "typescript",
+    "node",
+    "dependency injection",
+    "dependency inversion",
+    "inversion of control container"
+  ],
+  "license": "MIT",
+  "directories": {
+    "doc": "doc"
+  },
+  "main": "./index.js"
+}

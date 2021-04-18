@@ -1,0 +1,22 @@
+{
+    "name": "rocker-mvc-demo",
+    "version": "1.0.0",
+    "description": "rocker-mvc-demo",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "rocker-mvc"
+    ],
+    "author": "Chemingjun@weidian",
+    "license": "ISC",
+    "dependencies": {
+        "@vdian/rocker-mvc": "^1.0.27"
+    },
+    "devDependencies": {
+        "@types/chai": "4.1.2",
+        "@types/mocha": "2.2.48",
+        "@types/node": "^7.0.60",
+        "typescript": "^2.7.2"
+    }
+}

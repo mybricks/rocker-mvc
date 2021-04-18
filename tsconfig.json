@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es6",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    //"noImplicitAny": false,
+    //"sourceMap": true,
+    "allowJs": true,
+    //"outDir": "target",
+    "inlineSourceMap": true,
+    //"inlineSources": true
+    "baseUrl": ".",
+    "paths": {
+      "@mybricks/rocker-commons": [
+        "../rocker-commons/index.ts"
+      ],
+      "@mybricks/rocker-mvc": [
+        "./index.ts"
+      ],
+      "@mybricks/rocker-mvc-plugin-react": [
+        "../rocker-mvc-plugin-react/src/index.ts"
+      ]
+    }
+  },
+  "types": [
+    "node"
+  ],
+  "exclude": [
+    "node_modules",
+    "coverage",
+    "**/*.tsx"
+  ]
+}
