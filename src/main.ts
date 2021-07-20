@@ -2,11 +2,10 @@ import {init, Logger, _Tracelocal} from '@mybricks/rocker-commons';
 
 import Application = require('koa');
 import * as compress from 'koa-compress';
-import 'reflect-metadata';
 
 import midRouter from './router';
-import * as util from 'util';
-import * as Util from './util';
+import * as SysUtils from 'util';
+import * as MyUtils from './utils';
 import * as _Types from './types';
 import * as co from 'co';
 
@@ -18,9 +17,10 @@ import * as Https from 'https'
 import {Start, Router} from './config';
 
 require('zone.js');
-// 
+
 import 'zone.js'
-import {Stream} from 'stream';
+
+import {routerPathBindings, routerPtnBindings} from "./decorators";
 
 interface IConfigParam {
   port?: number;
@@ -30,181 +30,6 @@ interface IConfigParam {
 }
 
 let routerReg: RouterConfig & { all: RouterMap } = {all: {}};
-
-/**
- * Router pattern bindings
- * @type Map<Function, _Types.RouterForClz>
- * Function:RouterClass
- */
-const routerPtnBindings: Map<Function, _Types.RouterForClz> = new Map<Function, _Types.RouterForClz>();
-
-const routerPathBindings: Map<Function, string> = new Map<Function, string>();
-
-/**
- * The param's decorator for Request object of koa
- * @param {object} target
- * @param {string} methodName
- * @param {number} index
- * @constructor
- */
-export function Request(target: object, methodName: string, index: number): void {
-  let rfc: _Types.RouterForClz = getRouterForClz(target);
-  rfc.regMethodParam(methodName, index, ReqMethodParamType.Request, {required: true}, v => {
-    return v
-  });
-}
-
-export function Response(target: object, methodName: string, index: number): void {
-  let rfc: _Types.RouterForClz = getRouterForClz(target);
-  rfc.regMethodParam(methodName, index, ReqMethodParamType.Response, {required: true}, v => {
-    return v
-  });
-}
-
-export function Params(target: object, methodName: string, index: number): void {
-  let rfc: _Types.RouterForClz = getRouterForClz(target);
-  rfc.regMethodParam(methodName, index, ReqMethodParamType.Params, {required: true}, v => {
-    return v
-  });
-}
-
-export function Param(_cfg: _Types.RouterParamType): Function {
-  return function (target: Function, paramName: string, index: number) { // Use @Get(string|{url:string,render:string})
-    let rfc: _Types.RouterForClz = getRouterForClz(target);
-    let dt = Reflect.getMetadata('design:paramtypes', target, paramName);
-    if (!dt) {
-      dt = Reflect.getMetadata('design:paramtypes', target.constructor, paramName);
-    }
-    if (!dt) {
-      throw new Error('Reflect error occured.');
-    }
-    rfc.regMethodParam(paramName, index, ReqMethodParamType.Normal, _cfg, v => {
-      if (v === undefined || v === null) {
-        return v;
-      }
-      let tfn = dt[index];
-      if (tfn.name.toUpperCase() === 'OBJECT') {
-        if (typeof v === 'string') {
-          try {
-            return JSON.parse(v)
-          } catch (ex) {
-            try {
-              return (new Function('', `return ${v}`))()
-            } catch (ex) {
-              throw new Error(`JSON.parse(${v}) error,check the type for @Param('${paramName}') is Object or not .`);
-            }
-          }
-        } else {
-          return v
-        }
-      } else {
-        return tfn(v);
-      }
-    });
-  }
-}
-
-export function Head(...args: (_Types.RPParam)[]): Function | any {
-  return decoratorMethod('head', args);
-}
-
-export function Get(...args: (_Types.RPParam)[]): Function | any {
-  return decoratorMethod('get', args);
-}
-
-export function Post(...args: (_Types.RPParam)[]): Function | any {
-  return decoratorMethod('post', args);
-}
-
-
-export class RedirectResp extends _Types.ResponseWrap {
-
-  private _url: string;
-  /**
-   * Response header's code,301\302(default)
-   */
-  private _code: 302 | 301 = 302;
-
-  constructor(url: string) {
-    super();
-    this._url = url;
-  }
-
-  get url() {
-    return this._url;
-  }
-
-  get code() {
-    return this._code;
-  }
-
-  set code(code: 302 | 301) {
-    this._code = code;
-  }
-}
-
-export class DownloadResp extends _Types.ResponseWrap {
-  private _stream: Stream;
-  private _name: string;
-
-  constructor(name: string, stream: Stream) {
-    super();
-    this._name = name;
-    this._stream = stream;
-  }
-
-  get name() {
-    return this._name;
-  }
-
-  get stream() {
-    return this._stream;
-  }
-}
-
-/**
- * Render for return
- */
-export class RenderResp extends RenderWrap {
-  private _name: string;
-  private _model: object;
-
-  /**
-   * Constructor
-   * @param name The key in render description of
-   * @param model
-   */
-  constructor(name: string, model: object) {
-    super();
-    this._name = name;
-    this._model = model;
-  }
-
-  get name(): string {
-    return this._name;
-  }
-
-  get model(): object {
-    return this._model;
-  }
-}
-
-export class ResourceResp extends RenderWrap {
-  private _name: string;
-
-  /**
-   * Constructor
-   * @param name The key in render description of
-   */
-  constructor(name: string) {
-    super();
-    this._name = name;
-  }
-
-  get name(): string {
-    return this._name;
-  }
-}
 
 
 // --------------------------------------------------------------------------------------------
@@ -232,15 +57,15 @@ export function route(routerMap: _Types.RouterMap | RouterConfig)
     start: Function
   }
 } {
-  if (Util.isEmpty(routerMap)) {
+  if (MyUtils.isEmpty(routerMap)) {
     throw new _Types.MVCError('The routerMap is empty');
   }
 
   if (Object.keys(routerMap).filter(k => {
     return !/^\//.test(k);
   }).length > 0) {//Configuration
-    let rc: RouterConfig = routerMap;
-    let bootstrapModule = Util.getBootstrapModule(module);
+    let rc: RouterConfig = routerMap as RouterConfig;
+    let bootstrapModule = MyUtils.getBootstrapModule(module);
     ['renderStart', 'renderEnd'].forEach(name => {
       if (rc[name]) {
         let tpath: string = Path.resolve(Path.dirname(bootstrapModule.filename), rc[name]);
@@ -361,7 +186,7 @@ function start(config: IConfigParam = {
   setImmediate(() => {
     let ss = new Array(160).join('-');
     Logger.info(`${ss}`);
-    Logger.info(`[Rocker-mvc]Server(${Util.getLocalIp()}) starting...`);
+    Logger.info(`[Rocker-mvc]Server(${MyUtils.getLocalIp()}) starting...`);
 
     //Startup plugins
     if (pluginAry.length > 0) {
@@ -400,13 +225,13 @@ function start(config: IConfigParam = {
 
               //Generate trace id
               if (!context.request.header[_Types.TRACE_ID_KEY_IN_HEADER]) {
-                context.request.header[_Types.TRACE_ID_KEY_IN_HEADER] = Util.genTraceId();
+                context.request.header[_Types.TRACE_ID_KEY_IN_HEADER] = MyUtils.genTraceId();
               }
             }
             await new Promise((resolve, reject) => {
               context['_zone'].run(async function () {
                 try {
-                  if (Util.isGeneratorFunction(mid) || Util.isGenerator(mid)) {
+                  if (MyUtils.isGeneratorFunction(mid) || MyUtils.isGenerator(mid)) {
                     await co(mid.call(context, next));
                   } else {
                     await mid(context, next);
@@ -462,7 +287,7 @@ function start(config: IConfigParam = {
 
       Logger.info(bootstrapMsg());
 
-      Logger.info(`\n[Rocker-mvc]Server(${Util.getLocalIp()}) start completed,listening on port ${config.port}...`);
+      Logger.info(`\n[Rocker-mvc]Server(${MyUtils.getLocalIp()}) start completed,listening on port ${config.port}...`);
       Logger.info(`${ss}`);
 
       process.on('uncaughtException', function (err) {
@@ -483,7 +308,7 @@ function start(config: IConfigParam = {
 }
 
 function plugin(pluginFn: { (input: Types.Pluginput): void }): { plugin: Function } {
-  if (util.isFunction(pluginFn)) {
+  if (SysUtils.isFunction(pluginFn)) {
     pluginAry.push(pluginFn);
   } else {
     throw new _Types.MVCError(`The Plugin must be a function.`);
@@ -509,26 +334,6 @@ export namespace Types {
       }>>
 }
 
-// --------------------------------------------------------------------------------------------
-
-function decoratorMethod(method: string, args): Function | any {
-  let md = method.charAt(0).toUpperCase() + method.substring(1);
-  if (args.length == 1) { //@Get(string|{url:string,render:string})
-    let cfg: any = args[0];
-    return function (target: Function, methodName: string, desc: object) {
-      let rfc: _Types.RouterForClz = getRouterForClz(target);
-      rfc[`set${md}`](methodName, cfg);
-    }
-  } else if (args.length == 3) { //@Get
-    let rfc: _Types.RouterForClz = getRouterForClz(args[0]);
-    let meta = rfc.getMethodMeta(<string>args[1]);
-    if (meta) {
-      rfc[`set${md}`](<string>args[1], meta.rpp);
-    } else {
-      throw new Error(`${md} decorator's param error.`);
-    }
-  }
-}
 
 function bootstrapMsg() {
   let startMsg = [];
@@ -564,15 +369,13 @@ function onKoaErr(err: any) {
   this['_zone'].run(function () {
     // wrap non-error object
     if (!(err instanceof Error)) {
-      const newError: any = new Error('non-error thrown: ' + err);
-      // err maybe an object, try to copy the name, message and stack to the new error instance
-      if (err) {
-        if (err.name) newError.name = err.name;
-        if (err.message) newError.message = err.message;
-        if (err.stack) newError.stack = err.stack;
-        if (err.status) newError.status = err.status;
-        if (err.headers) newError.headers = err.headers;
+      let newError
+      try {
+        newError = new Error(JSON.stringify(err));
+      } catch (ex) {
+        newError = ex;
       }
+
       err = newError;
     }
 
@@ -614,13 +417,6 @@ function onKoaErr(err: any) {
 }
 
 
-function getRouterForClz(target) {
-  let fn = target.constructor;
-  return routerPtnBindings.get(fn) || (routerPtnBindings.set(fn, new _Types.RouterForClz(() => {
-    return routerPathBindings.get(fn)
-  })).get(fn));
-}
-
 /**
  * Get it's defined module,Notice! here may be an error
  * @param md
@@ -628,7 +424,7 @@ function getRouterForClz(target) {
  * @returns [module,subClass]
  */
 function getModule(clz: Function): Promise<any> {
-  const mcpc = module.constructor.prototype.constructor;
+  const mcpc: { _cache } = module.constructor.prototype.constructor;
 
   if (typeof mcpc === 'undefined' || typeof mcpc._cache !== 'object') {
     throw new Error('@rocker-mvc not support the node version.');

@@ -11,4 +11,6 @@ import * as PATH from "path";
 
 Start.importPath = PATH.dirname(module.parent['filename']);
 
-export * from './src/main';
+export {pipe, route} from './src/main';
+export {FlushStreamResp, RenderResp, ResourceResp, DownloadResp, RedirectResp} from './src/returns'
+export {Response, Request, Get, Head, Param, Params, Post} from './src/decorators'

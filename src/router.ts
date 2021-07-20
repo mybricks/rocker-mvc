@@ -8,13 +8,12 @@ let routerPtnBindings: Map<Function, Types.RouterForClz>;
 import * as mime from 'mime';
 import * as FS from 'fs';
 import * as PATH from "path";
-import * as url from 'url';
 
-import * as Util from './util';
+import * as Utils from './utils';
 import {Router} from './config';
 import {RouterMap, RouterConfig} from "./types";
 import {Stream} from "stream";
-import {DownloadResp, RedirectResp, RenderResp, ResourceResp} from "./main";
+import {FlushStreamResp, DownloadResp, RedirectResp, RenderResp, ResourceResp} from "./returns";
 
 const assetsPt = /\.(js|map|css|less|png|jpg|jpeg|gif|bmp|ico|webp|html|htm|eot|svg|ttf|woff|mp4|mp3|zip)$/i;
 
@@ -45,7 +44,7 @@ export default function (_routerMap, _routerPtnBindings: Map<Function, Types.Rou
     }
   return async function (context: Application.Context, next) {
     var url: string = context.request.url;
-    if (Util.isEmpty(url)) {
+    if (Utils.isEmpty(url)) {
       throw new Types.MVCError('No url found', 404);
     }
 
@@ -69,7 +68,7 @@ export default function (_routerMap, _routerPtnBindings: Map<Function, Types.Rou
 }
 
 //-----------------------------------------------------------------------------------------
-//-----------------------------------------------------------------------------------------
+
 //Assets
 function proAssets() {
   let EtagSet = new Set();
@@ -245,7 +244,13 @@ async function invoke(_ctx: Application.Context,
 
     let rtn = await instance[pattern.clzMethod].apply(instance, paramAry);
     if (rtn !== undefined) {
-      if (rtn instanceof Stream) {//Return an Stream object
+      if (rtn instanceof FlushStreamResp) {//For FlushStreamResp
+        _ctx.response.status = 200;
+        _ctx.body = rtn;
+
+        rtn._initKOACtx(_ctx)
+        return
+      } else if (rtn instanceof Stream) {//Return an Stream object
         _ctx.response.status = 200;
         _ctx.body = rtn;
         return;
@@ -343,16 +348,13 @@ function renderFn(routerForClz: Types.RouterForClz,
   }
 }
 
-function getPostArgs(context: Application.Context) {
+function getPostArgs(context) {
+  const req = context.req
   return new Promise((resolve, reject) => {
-    let pdata = "";
-    context.req.addListener("data", postchunk => {
-      pdata += postchunk;
-    })
-    context.req.addListener("end", function () {
-      let reqArgs;
+    const complete = function (pdata) {////TODO 研究koa-body本身对content-type的处理
       if (pdata != '') {
         try {
+          let reqArgs
           // 针对urlencoded做解析
           if (pdata.trim().startsWith('{')) {
             reqArgs = (new Function('', `return ${pdata}`))();
@@ -372,14 +374,26 @@ function getPostArgs(context: Application.Context) {
                 if (tary && tary.length == 2) {
                   reqArgs[tary[0].trim()] = tary[1];
                 }
-              })
+              });
             }
           }
+          resolve(reqArgs);
         } catch (e) {
           reject(e);
         }
       }
-      resolve(reqArgs);
-    })
-  })
+    }
+
+    if (!context.request.body) {
+      let pdata = "";
+      req.addListener("data", postchunk => {
+        pdata += postchunk;
+      });
+      req.addListener("end", function () {
+        complete(pdata)
+      });
+    } else {
+      complete(context.request.body)
+    }
+  });
 }
