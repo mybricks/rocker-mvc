@@ -1,6 +1,6 @@
 {
   "name": "@mybricks/rocker-mvc",
-  "version": "0.0.11",
+  "version": "0.0.14",
   "description": "MVC Framework for typescript, powered by rocker.",
   "author": "Chemingjun@vdian",
   "scripts": {

@@ -24,7 +24,7 @@ export class RouterPattern {
   render: { path: string, compile: Function }[] | { [index: string]: { path: string, compile: Function }[] };
   clzMethod: string;
 
-  constructor(fnPath: Function, _clzMethod: string, _config?: RPParam) {
+  constructor(fnPath: Function, _clzMethod: string, _config?: RPParam, idx?: number) {
     this.fnPath = fnPath;
     this.clzMethod = _clzMethod;
     if (Util.isEmpty(_config)) {
@@ -76,9 +76,12 @@ export class RouterPattern {
           return;
         }
 
-        [].concat(Array.isArray(renderCfg) ? renderCfg : [renderCfg]).forEach(_tpt => ary.push(
-          proFn(_tpt, renderType)
-        ))
+        [].concat(Array.isArray(renderCfg) ? renderCfg : [renderCfg]).forEach(_tpt => {
+          ary.push(
+            // proFn(_tpt, renderType)
+            proFn(_tpt.replace(/\.tsx/, `(${idx}).tsx`), renderType)
+          )
+        })
         this.render = ary;
       }
     }
@@ -100,6 +103,8 @@ export declare type RouterParamType =
   | string;
 
 export  type MethodParams = { index: number, name: string, type: ReqMethodParamType, transformer: Function, required: boolean };
+
+let idx: number = 0
 
 /**
  * Router's register
@@ -240,7 +245,10 @@ export class RouterForClz {
         tg = new Map<String, RouterPattern>();
         this.methodReg.set(_reqType, tg);
       }
-      let rp: RouterPattern = new RouterPattern(this.fnPath, _clzMethod, _config);
+      if (typeof _config === 'object' && _config.render) {
+        idx++
+      }
+      let rp: RouterPattern = new RouterPattern(this.fnPath, _clzMethod, _config, idx);
       tg.set(<string>rp.urlPattern, rp);
       let treg = this.methodMeta.get(_clzMethod);
       if (treg) {
