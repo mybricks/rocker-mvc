@@ -213,6 +213,7 @@ async function invoke(_ctx: Application.Context,
   } else if (_ctx.request.method === "HEAD") {
     pattern = routerForClz.getHead(urlSub);
     args = _ctx.request.query;
+    return;
   }
 
   if (pattern) {
