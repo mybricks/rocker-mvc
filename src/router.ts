@@ -213,7 +213,6 @@ async function invoke(_ctx: Application.Context,
   } else if (_ctx.request.method === "HEAD") {
     pattern = routerForClz.getHead(urlSub);
     args = _ctx.request.query;
-    return;
   }
 
   if (pattern) {
@@ -334,6 +333,7 @@ async function invoke(_ctx: Application.Context,
       //_ctx.res.end();
     }
   } else {
+    if (_ctx.request.method === 'HEAD') return;
     throw new Types.MVCError(`The request url(${_urlFull}, full path: ${_ctx.url}, method: ${_ctx.method}) not found.`, 404);
   }
 }
