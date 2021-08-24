@@ -23,6 +23,7 @@ export class RouterPattern {
    */
   render: { path: string, compile: Function }[] | { [index: string]: { path: string, compile: Function }[] };
   clzMethod: string;
+  wrapper: string;
 
   constructor(fnPath: Function, _clzMethod: string, _config?: RPParam, idx?: number) {
     this.fnPath = fnPath;
@@ -33,7 +34,8 @@ export class RouterPattern {
       this.urlPattern = <string>_config;
     } else if (typeof _config === 'object') {
       this.urlPattern = _config['url'];
-      this.regexp = _config['url'] instanceof RegExp
+      this.regexp = _config['url'] instanceof RegExp;
+      this.wrapper = _config['wrapper'];
       let renderCfg = _config['render'];
       let renderType = _config['renderType'];
       if (renderCfg) {
