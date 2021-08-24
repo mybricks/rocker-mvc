@@ -35,13 +35,13 @@ export class RouterPattern {
     } else if (typeof _config === 'object') {
       this.urlPattern = _config['url'];
       this.regexp = _config['url'] instanceof RegExp;
-      this.wrapper = _config['wrapper'];
       let renderCfg = _config['render'];
       let renderType = _config['renderType'];
+      let wrapper = _config['wrapper'];
       if (renderCfg) {
         let ary = [];
         let th = this;
-
+       
         let proFn = function (_item, _type?) {
           return {
             get path() {
@@ -61,6 +61,12 @@ export class RouterPattern {
               return Ejs.compile(content, {filename: rp}); // option {filename:...}
             }, get renderType() {
               return _type
+            }, get wrapper() {
+              let wrapperFile = "";
+              if(typeof wrapper == 'string' && wrapper.indexOf(".") === 0) {
+                wrapperFile =  Path.resolve(Path.dirname(th.fnPath()), wrapper);
+              }
+              return wrapperFile;
             }
           }
         }
