@@ -99,7 +99,8 @@ export class RouterPattern {
 interface RenderDesc {
   url: string | RegExp,
   render?: string | string[] | { [index: string]: string | string[] }
-  renderType?: string
+  renderType?: string,
+  wrapper?: string
 }
 
 export declare type RPParam = RenderDesc | string;
