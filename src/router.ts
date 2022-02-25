@@ -353,7 +353,9 @@ function getPostArgs(context) {
   const req = context.req
   return new Promise((resolve, reject) => {
     const complete = function (pdata) {////TODO 研究koa-body本身对content-type的处理
-      if (pdata != '') {
+      if (Object.prototype.toString.call(pdata) === '[object Object]') {
+        resolve(pdata);
+    } else if (pdata != '') {
         try {
           let reqArgs
           // 针对urlencoded做解析
